@@ -10,6 +10,19 @@ service:
   port: 80
   targetPort: 8000
 
+config:
+  DEBUG: "False"
+  SECRET_KEY: "django-insecure-change-this-in-production-xyz123"
+  ALLOWED_HOSTS: "*"
+
+  # DB switch (SQLite default for demo)
+  DB_ENGINE: "django.db.backends.sqlite3"
+  DB_NAME: "/tmp/db.sqlite3"
+  DB_HOST: ""
+  DB_PORT: ""
+  DB_USER: ""
+  DB_PASSWORD: ""
+
 resources:
   requests:
     cpu: 100m
@@ -18,19 +31,18 @@ resources:
     cpu: 500m
     memory: 512Mi
 
+probes:
+  liveness:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readiness:
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    timeoutSeconds: 3
+
 autoscaling:
   enabled: true
   minReplicas: 2
   maxReplicas: 6
   targetCPUUtilizationPercentage: 70
-
-env:
-  DEBUG: "False"
-  SECRET_KEY: "django-insecure-change-this-in-production-xyz123"
-  ALLOWED_HOSTS: "*"
-  DB_ENGINE: "django.db.backends.sqlite3"
-  DB_NAME: "/tmp/db.sqlite3"
-  DB_USER: ""
-  DB_PASSWORD: ""
-  DB_HOST: ""
-  DB_PORT: ""
