@@ -1,0 +1,36 @@
+replicaCount: 2
+
+image:
+  repository: 082228066503.dkr.ecr.us-west-2.amazonaws.com/lesson-7-ecr
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+env:
+  DEBUG: "False"
+  SECRET_KEY: "django-insecure-change-this-in-production-xyz123"
+  ALLOWED_HOSTS: "*"
+  DB_ENGINE: "django.db.backends.sqlite3"
+  DB_NAME: "/tmp/db.sqlite3"
+  DB_USER: ""
+  DB_PASSWORD: ""
+  DB_HOST: ""
+  DB_PORT: ""
