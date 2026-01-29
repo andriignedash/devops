@@ -74,12 +74,6 @@ pipeline {
                 }
             }
         }
-        
-        stage('Cleanup') {
-            steps {
-                deleteDir()
-            }
-        }
     }
     
     post {
