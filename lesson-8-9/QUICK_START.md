@@ -1,17 +1,17 @@
-# Быстрый старт: Lesson 8-9
+# Quick Start: Lesson 8-9
 
-## ⚠️ ПЕРЕД ЗАПУСКОМ - ВАЖНО!
+## ⚠️ BEFORE STARTING - IMPORTANT!
 
-### 1. Создайте GitOps репозиторий
+### 1. Create GitOps Repository
 
-Создайте отдельный репозиторий со структурой:
+Create a separate repository with structure:
 
 ```
 gitops-repo/
 └── charts/
     └── django-app/
         ├── Chart.yaml
-        ├── values.yaml    # Важно: image.repository и image.tag
+        ├── values.yaml    # Important: image.repository and image.tag
         └── templates/
             ├── deployment.yaml
             ├── service.yaml
@@ -19,29 +19,29 @@ gitops-repo/
             └── configmap.yaml
 ```
 
-Можно скопировать из `lesson-8-9/charts/django-app/`
+You can copy from `lesson-8-9/charts/django-app/`
 
-### 2. Обновите конфигурацию
+### 2. Update Configuration
 
-**main.tf (строка ~98):**
+**main.tf (line ~98):**
 ```hcl
 gitops_repo_url = "https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git"
 ```
 
-**Jenkinsfile (строки 7-9):**
+**Jenkinsfile (lines 7-9):**
 ```groovy
 ECR_REGISTRY = "XXXXXXXXXXXX.dkr.ecr.us-west-2.amazonaws.com"
 ECR_REPOSITORY = "lesson-8-9-ecr"
 GITOPS_REPO_URL = "https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git"
 ```
 
-### 3. Создайте GitHub Personal Access Token
+### 3. Create GitHub Personal Access Token
 
 1. https://github.com/settings/tokens
-2. Права: `repo` (full control)
-3. Сохраните токен (понадобится для Jenkins)
+2. Scope: `repo` (full control)
+3. Save token (will be needed for Jenkins)
 
-## 🚀 Запуск
+## 🚀 Launch
 
 ```bash
 cd lesson-8-9
@@ -50,58 +50,58 @@ terraform init
 terraform apply -auto-approve
 ```
 
-⏱️ Время: ~15-20 минут
+⏱️ Time: ~15-20 minutes
 
-## 🔧 Настройка Jenkins
+## 🔧 Jenkins Setup
 
-### Открыть UI:
+### Open UI:
 ```bash
 kubectl port-forward -n jenkins svc/jenkins 8080:8080
 ```
 
 URL: http://localhost:8080
 
-### Получить пароль:
+### Get Password:
 ```bash
 kubectl get secret -n jenkins jenkins \
   -o jsonpath='{.data.jenkins-admin-password}' | base64 -d
 echo
 ```
 
-### Добавить GitHub PAT:
+### Add GitHub PAT:
 1. **Manage Jenkins** → **Credentials**
 2. **Add Credentials**:
    - Kind: `Secret text`
-   - Secret: (ваш GitHub PAT)
+   - Secret: (your GitHub PAT)
    - ID: `github_pat`
 
-### Создать Pipeline:
+### Create Pipeline:
 1. **New Item** → **Pipeline**
 2. **Pipeline script from SCM**
    - SCM: Git
-   - Repository URL: (этот репозиторий)
+   - Repository URL: (this repository)
    - Branch: `*/lesson-8-9`
    - Script Path: `Jenkinsfile`
 
-## 📊 Настройка Argo CD
+## 📊 Argo CD Setup
 
-### Открыть UI:
+### Open UI:
 ```bash
 kubectl port-forward -n argocd svc/argocd-server 8081:80
 ```
 
 URL: http://localhost:8081
 
-### Получить пароль:
+### Get Password:
 ```bash
 kubectl get secret -n argocd argocd-initial-admin-secret \
   -o jsonpath='{.data.password}' | base64 -d
 echo
 ```
 
-Логин: `admin`
+Login: `admin`
 
-## ✅ Проверка
+## ✅ Verification
 
 ```bash
 kubectl get nodes
@@ -115,18 +115,18 @@ kubectl get applications -n argocd
 kubectl get all -n django
 ```
 
-## 🔄 Полный CI/CD цикл
+## 🔄 Full CI/CD Cycle
 
-1. **Push код** → GitHub
-2. **Запустить Jenkins Pipeline** (Build Now)
+1. **Push code** → GitHub
+2. **Run Jenkins Pipeline** (Build Now)
 3. **Jenkins**:
-   - Build образа с Kaniko
-   - Push в ECR
+   - Build image with Kaniko
+   - Push to ECR
    - Update GitOps repo
 4. **Argo CD**:
-   - Автоматически обнаружит изменения
-   - Синхронизирует с кластером
-5. **Проверить деплой**:
+   - Automatically detects changes
+   - Syncs with cluster
+5. **Check deployment**:
    ```bash
    kubectl get pods -n django -w
    ```
@@ -143,6 +143,6 @@ kubectl delete namespace django jenkins argocd
 terraform destroy -auto-approve
 ```
 
-## 📚 Подробная документация
+## 📚 Detailed Documentation
 
-См. [README.md](README.md)
+See [README.md](README.md)

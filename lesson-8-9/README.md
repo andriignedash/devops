@@ -1,22 +1,22 @@
-# Lesson 8-9: CI/CD с Jenkins, Argo CD, Helm, Terraform, ECR и EKS
+# Lesson 8-9: CI/CD with Jenkins, Argo CD, Helm, Terraform, ECR and EKS
 
-## Архитектура CI/CD
+## CI/CD Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Developer Workflow                           │
 │                                                                       │
 │  1. Git Push → GitHub                                                │
-│  2. Jenkins Pipeline (EKS Pod с Kaniko)                             │
+│  2. Jenkins Pipeline (EKS Pod with Kaniko)                          │
 │     ├─ Checkout Code                                                 │
-│     ├─ Build Docker Image (Kaniko - без Docker daemon)              │
+│     ├─ Build Docker Image (Kaniko - no Docker daemon)               │
 │     ├─ Push to ECR (image:tag + image:latest)                       │
-│     └─ Update GitOps Repo (values.yaml с новым tag)                 │
+│     └─ Update GitOps Repo (values.yaml with new tag)                │
 │                                                                       │
 │  3. Argo CD (GitOps Controller)                                      │
-│     ├─ Detect изменения в GitOps репозитории                        │
+│     ├─ Detect changes in GitOps repository                          │
 │     ├─ Auto Sync (selfHeal + prune)                                 │
-│     └─ Deploy в EKS namespace 'django'                              │
+│     └─ Deploy to EKS namespace 'django'                             │
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -25,64 +25,64 @@
 │  AWS Infrastructure:                                                 │
 │  ├─ VPC (3 AZ, public/private subnets)                             │
 │  ├─ EKS Cluster v1.29 (2-6 nodes t3.medium)                        │
-│  ├─ ECR Repository (для Docker образов)                            │
+│  ├─ ECR Repository (for Docker images)                             │
 │  └─ S3 + DynamoDB (Terraform state backend)                        │
 │                                                                       │
 │  Kubernetes Apps (Helm via Terraform):                              │
 │  ├─ Jenkins (namespace: jenkins)                                    │
-│  │  ├─ Controller с JCasC                                          │
+│  │  ├─ Controller with JCasC                                       │
 │  │  ├─ Kubernetes Cloud Agent (Kaniko pod template)                │
 │  │  └─ PVC 10Gi (gp2)                                              │
 │  │                                                                   │
 │  └─ Argo CD (namespace: argocd)                                     │
-│     ├─ Server (insecure mode для простоты)                         │
+│     ├─ Server (insecure mode for simplicity)                       │
 │     ├─ Application Controller                                       │
 │     ├─ Repository Secret (GitOps repo)                             │
 │     └─ Application CR (django-app)                                  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Требования
+## Requirements
 
-### Установленные инструменты
+### Installed Tools
 
-- **AWS CLI** (настроен с credentials)
+- **AWS CLI** (configured with credentials)
 - **Terraform** >= 1.5.0
 - **kubectl**
-- **Docker** (для локальных тестов, опционально)
+- **Docker** (for local testing, optional)
 - **git**
-- **jq** (опционально, для парсинга JSON)
+- **jq** (optional, for JSON parsing)
 
 ### AWS Resources
 
-- Аккаунт AWS с правами на создание:
+- AWS Account with permissions to create:
   - VPC, Subnets, Internet Gateway, NAT Gateway
   - EKS Cluster, Node Groups
   - ECR Repository
   - S3 Bucket, DynamoDB Table
-  - IAM Roles и Policies
+  - IAM Roles and Policies
 
-## Быстрый старт
+## Quick Start
 
-### 1. Подготовка репозиториев
+### 1. Repository Setup
 
-#### А) Основной репозиторий (текущий)
+#### A) Main Repository (current)
 
-Этот репозиторий содержит:
-- Terraform инфраструктуру (`lesson-8-9/`)
-- Исходный код Django приложения (`docker-django-nginx/app/`)
-- **Jenkinsfile** (в корне репозитория)
+This repository contains:
+- Terraform infrastructure (`lesson-8-9/`)
+- Django application source code (`docker-django-nginx/app/`)
+- **Jenkinsfile** (in repository root)
 
-#### Б) GitOps репозиторий (TODO: создать отдельно)
+#### B) GitOps Repository (TODO: create separately)
 
-Создайте отдельный GitOps репозиторий со структурой:
+Create a separate GitOps repository with structure:
 
 ```
 gitops-repo/
 └── charts/
     └── django-app/
         ├── Chart.yaml
-        ├── values.yaml          # <-- Jenkins будет обновлять image.tag здесь
+        ├── values.yaml          # <-- Jenkins updates image.tag here
         └── templates/
             ├── deployment.yaml
             ├── service.yaml
@@ -90,7 +90,7 @@ gitops-repo/
             └── configmap.yaml
 ```
 
-**TODO:** Обновите `main.tf` с URL вашего GitOps репозитория:
+**TODO:** Update `main.tf` with your GitOps repository URL:
 
 ```hcl
 module "argo_cd" {
@@ -99,7 +99,7 @@ module "argo_cd" {
 }
 ```
 
-### 2. Deploy инфраструктуры
+### 2. Deploy Infrastructure
 
 ```bash
 cd lesson-8-9
@@ -111,16 +111,16 @@ terraform plan
 terraform apply -auto-approve
 ```
 
-**Время выполнения:** ~15-20 минут
+**Execution time:** ~15-20 minutes
 
-**Создаст:**
-- VPC с 3 availability zones
-- EKS cluster с 2 worker nodes
+**Creates:**
+- VPC with 3 availability zones
+- EKS cluster with 2 worker nodes
 - ECR repository
 - Jenkins (namespace: jenkins)
 - Argo CD (namespace: argocd)
 
-### 3. Настройка kubectl
+### 3. Configure kubectl
 
 ```bash
 aws eks update-kubeconfig --name lesson-8-9-eks --region us-west-2
@@ -130,7 +130,7 @@ kubectl get nodes
 kubectl get pods -A
 ```
 
-### 4. Проверка outputs
+### 4. Check Outputs
 
 ```bash
 terraform output
@@ -142,17 +142,17 @@ terraform output -raw jenkins_port_forward
 terraform output -raw argocd_port_forward
 ```
 
-## Jenkins: Настройка и использование
+## Jenkins: Setup and Usage
 
-### 1. Открыть Jenkins UI
+### 1. Open Jenkins UI
 
 ```bash
 kubectl port-forward -n jenkins svc/jenkins 8080:8080
 ```
 
-Откройте в браузере: http://localhost:8080
+Open in browser: http://localhost:8080
 
-### 2. Получить admin пароль
+### 2. Get Admin Password
 
 ```bash
 kubectl get secret -n jenkins jenkins -o jsonpath='{.data.jenkins-admin-password}' | base64 -d
@@ -160,46 +160,46 @@ kubectl get secret -n jenkins jenkins -o jsonpath='{.data.jenkins-admin-password
 echo
 ```
 
-**Логин:** `admin`  
-**Пароль:** (из команды выше)
+**Login:** `admin`  
+**Password:** (from command above)
 
-### 3. Настройка Credentials
+### 3. Configure Credentials
 
 #### GitHub Personal Access Token
 
-1. В Jenkins UI: **Manage Jenkins** → **Credentials** → **System** → **Global credentials**
+1. In Jenkins UI: **Manage Jenkins** → **Credentials** → **System** → **Global credentials**
 2. **Add Credentials**:
    - **Kind:** Secret text
-   - **Secret:** (ваш GitHub PAT с правами `repo`)
+   - **Secret:** (your GitHub PAT with `repo` scope)
    - **ID:** `github_pat`
    - **Description:** GitHub Personal Access Token
 
-**TODO:** Создайте GitHub PAT:
+**TODO:** Create GitHub PAT:
 - https://github.com/settings/tokens
-- Права: `repo` (full control of private repositories)
+- Scope: `repo` (full control of private repositories)
 
-#### AWS ECR Credentials (опционально)
+#### AWS ECR Credentials (optional)
 
-Kaniko использует Amazon ECR Credential Helper автоматически через IAM роль ноды.
+Kaniko uses Amazon ECR Credential Helper automatically via node IAM role.
 
-**TODO (если нужен IRSA):** Настройте IRSA для pod'а Jenkins:
-- Создайте IAM роль с политикой `AmazonEC2ContainerRegistryPowerUser`
-- Добавьте аннотацию `eks.amazonaws.com/role-arn` в ServiceAccount
+**TODO (if IRSA needed):** Configure IRSA for Jenkins pod:
+- Create IAM role with `AmazonEC2ContainerRegistryPowerUser` policy
+- Add `eks.amazonaws.com/role-arn` annotation to ServiceAccount
 
-### 4. Создание Pipeline Job
+### 4. Create Pipeline Job
 
-1. **New Item** → **Pipeline** → имя: `django-app-pipeline`
+1. **New Item** → **Pipeline** → name: `django-app-pipeline`
 2. **Pipeline**:
    - **Definition:** Pipeline script from SCM
    - **SCM:** Git
-   - **Repository URL:** (URL этого репозитория)
+   - **Repository URL:** (URL of this repository)
    - **Branch:** `*/lesson-8-9`
    - **Script Path:** `Jenkinsfile`
 3. **Save**
 
-### 5. Настройка переменных окружения (опционально)
+### 5. Configure Environment Variables (optional)
 
-В **Configure** → **Pipeline** → **Environment Variables** (через EnvInject или в самом Jenkinsfile):
+In **Configure** → **Pipeline** → **Environment Variables** (via EnvInject or in Jenkinsfile):
 
 ```groovy
 ECR_REGISTRY=XXXXXXXXXXXX.dkr.ecr.us-west-2.amazonaws.com
@@ -210,28 +210,28 @@ GITOPS_BRANCH=main
 GITOPS_VALUES_PATH=charts/django-app/values.yaml
 ```
 
-**TODO:** Обновите переменные в Jenkinsfile или через Jenkins UI.
+**TODO:** Update variables in Jenkinsfile or via Jenkins UI.
 
-### 6. Запуск Pipeline
+### 6. Run Pipeline
 
-**Build Now** → Проверьте логи в **Console Output**
+**Build Now** → Check logs in **Console Output**
 
-**Этапы:**
-1. **Checkout** - клонирование репозитория
+**Stages:**
+1. **Checkout** - clone repository
 2. **Build & Push to ECR** - Kaniko build + push
-3. **Update GitOps Repo** - обновление `values.yaml` с новым tag
+3. **Update GitOps Repo** - update `values.yaml` with new tag
 
-## Argo CD: Настройка и мониторинг
+## Argo CD: Setup and Monitoring
 
-### 1. Открыть Argo CD UI
+### 1. Open Argo CD UI
 
 ```bash
 kubectl port-forward -n argocd svc/argocd-server 8081:80
 ```
 
-Откройте в браузере: http://localhost:8081
+Open in browser: http://localhost:8081
 
-### 2. Получить admin пароль
+### 2. Get Admin Password
 
 ```bash
 kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
@@ -239,22 +239,22 @@ kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath='{.data.pas
 echo
 ```
 
-**Логин:** `admin`  
-**Пароль:** (из команды выше)
+**Login:** `admin`  
+**Password:** (from command above)
 
-### 3. Проверка Application
+### 3. Check Application
 
-В Argo CD UI:
+In Argo CD UI:
 - **Applications** → `django-app`
-- **Status:** Healthy (после первого sync)
+- **Status:** Healthy (after first sync)
 - **Sync Status:** Synced
 
-**Автоматический sync:**
-- `prune: true` - удаляет старые ресурсы
-- `selfHeal: true` - восстанавливает при manual changes
-- `CreateNamespace: true` - создает namespace автоматически
+**Automatic sync:**
+- `prune: true` - removes old resources
+- `selfHeal: true` - restores on manual changes
+- `CreateNamespace: true` - creates namespace automatically
 
-### 4. Manual Sync (если нужно)
+### 4. Manual Sync (if needed)
 
 ```bash
 kubectl get applications -n argocd
@@ -264,17 +264,17 @@ kubectl get application django-app -n argocd -o yaml
 argocd app sync django-app
 ```
 
-Или через UI: **Sync** → **Synchronize**
+Or via UI: **Sync** → **Synchronize**
 
-### 5. Мониторинг обновлений
+### 5. Monitor Updates
 
-После того, как Jenkins обновит GitOps репозиторий:
+After Jenkins updates GitOps repository:
 
-1. Argo CD обнаружит изменения (~30 секунд)
-2. Auto-sync запустится
-3. Новый образ будет задеплоен в namespace `django`
+1. Argo CD detects changes (~30 seconds)
+2. Auto-sync starts
+3. New image is deployed to namespace `django`
 
-**Проверка:**
+**Check:**
 
 ```bash
 kubectl get pods -n django
@@ -284,19 +284,19 @@ kubectl describe deployment -n django django-app
 kubectl rollout status deployment/django-app -n django
 ```
 
-## GitOps Workflow: Полный цикл
+## GitOps Workflow: Full Cycle
 
-### 1. Локальная разработка
+### 1. Local Development
 
 ```bash
 cd docker-django-nginx/app
 
 git checkout -b feature/new-feature
 
-# Вносите изменения в код...
+# Make code changes...
 ```
 
-### 2. Commit и Push
+### 2. Commit and Push
 
 ```bash
 git add .
@@ -304,29 +304,29 @@ git commit -m "Add new feature"
 git push origin feature/new-feature
 ```
 
-### 3. Запуск Jenkins Pipeline
+### 3. Run Jenkins Pipeline
 
-**В Jenkins:**
-- Настройте webhook или запустите pipeline вручную
-- Pipeline выполнит:
-  - Build образа с тегом `git-sha-short`
-  - Push в ECR: `image:abc1234` + `image:latest`
+**In Jenkins:**
+- Configure webhook or run pipeline manually
+- Pipeline executes:
+  - Build image with tag `git-sha-short`
+  - Push to ECR: `image:abc1234` + `image:latest`
   - Update GitOps repo: `image.tag: "abc1234"`
 
-**TODO:** Настройте GitHub webhook:
+**TODO:** Configure GitHub webhook:
 - Payload URL: `http://jenkins-external-url/github-webhook/`
 - Content type: `application/json`
 - Events: Just the push event
 
 ### 4. Argo CD Auto-Sync
 
-Argo CD автоматически:
-1. Обнаружит изменения в `values.yaml`
-2. Запустит sync
-3. Обновит deployment с новым образом
-4. Kubernetes выполнит rolling update
+Argo CD automatically:
+1. Detects changes in `values.yaml`
+2. Starts sync
+3. Updates deployment with new image
+4. Kubernetes performs rolling update
 
-### 5. Проверка деплоя
+### 5. Verify Deployment
 
 ```bash
 kubectl get pods -n django -w
@@ -336,7 +336,7 @@ kubectl logs -n django deployment/django-app -f
 kubectl get events -n django --sort-by='.lastTimestamp'
 ```
 
-### 6. Доступ к приложению
+### 6. Access Application
 
 ```bash
 kubectl get svc -n django
@@ -346,7 +346,7 @@ export DJANGO_URL=$(kubectl get svc -n django django-app -o jsonpath='{.status.l
 curl http://$DJANGO_URL
 ```
 
-## Команды для проверки
+## Verification Commands
 
 ### EKS Cluster
 
@@ -408,7 +408,7 @@ aws ecr describe-images --repository-name lesson-8-9-ecr --region us-west-2 --ou
 
 ## Troubleshooting
 
-### Jenkins не запускается
+### Jenkins Not Starting
 
 ```bash
 kubectl get events -n jenkins --sort-by='.lastTimestamp'
@@ -418,26 +418,26 @@ kubectl describe pod -n jenkins <jenkins-pod-name>
 kubectl logs -n jenkins <jenkins-pod-name> --previous
 ```
 
-**Частые проблемы:**
-- PVC не создан (проверьте storage class)
-- Недостаточно ресурсов на нодах
+**Common issues:**
+- PVC not created (check storage class)
+- Insufficient resources on nodes
 
-### Kaniko build fails
+### Kaniko Build Fails
 
-**Ошибка:** `error building image: getting stage builder`
+**Error:** `error building image: getting stage builder`
 
-**Решение:**
-- Проверьте, что Dockerfile существует по пути
-- Проверьте, что context path правильный
-- Проверьте ресурсы pod'а (memory, cpu)
+**Solution:**
+- Check that Dockerfile exists at path
+- Verify context path is correct
+- Check pod resources (memory, cpu)
 
-**Ошибка:** `error pushing image: denied`
+**Error:** `error pushing image: denied`
 
-**Решение:**
-- Проверьте IAM роль ноды (должна иметь права на ECR)
-- Проверьте ECR repository URL
+**Solution:**
+- Check node IAM role (should have ECR permissions)
+- Verify ECR repository URL
 
-### Argo CD не синхронизирует
+### Argo CD Not Syncing
 
 ```bash
 kubectl logs -n argocd deployment/argocd-application-controller
@@ -445,12 +445,12 @@ kubectl logs -n argocd deployment/argocd-application-controller
 kubectl get application django-app -n argocd -o yaml | grep -A 10 status
 ```
 
-**Частые проблемы:**
-- GitOps репозиторий недоступен (проверьте Repository Secret)
-- Неправильный path к chart
-- RBAC проблемы
+**Common issues:**
+- GitOps repository unreachable (check Repository Secret)
+- Incorrect path to chart
+- RBAC issues
 
-### Django app не доступен
+### Django App Not Accessible
 
 ```bash
 kubectl get svc -n django django-app -o wide
@@ -460,41 +460,44 @@ kubectl describe svc -n django django-app
 kubectl get endpoints -n django
 ```
 
-**LoadBalancer не получает external IP:**
-- Проверьте AWS Load Balancer Controller
-- Проверьте subnet tags для ELB
-- Проверьте security groups
+**LoadBalancer not getting external IP:**
+- Check AWS Load Balancer Controller
+- Verify subnet tags for ELB
+- Check security groups
 
-## Структура проекта
+## Project Structure
 
 ```
 lesson-8-9/
-├── backend.tf              # S3 backend configuration
-├── main.tf                 # Основные модули (VPC, EKS, ECR, Jenkins, Argo CD)
-├── outputs.tf              # Terraform outputs
-├── README.md               # Этот файл
+├── README.md                    # Detailed documentation (this file)
+├── QUICK_START.md               # Quick start guide
+├── GITOPS_REPO_EXAMPLE.md       # GitOps repository example
+├── backend.tf                   # S3 backend configuration
+├── main.tf                      # Main file with modules
+├── outputs.tf                   # Terraform outputs
+├── .gitignore
 │
 ├── modules/
-│   ├── s3-backend/         # S3 + DynamoDB для state
-│   ├── vpc/                # VPC с public/private subnets
-│   ├── ecr/                # ECR repository
-│   ├── eks/                # EKS cluster + node group
+│   ├── s3-backend/             # S3 + DynamoDB for state
+│   ├── vpc/                    # VPC with 3 AZ
+│   ├── ecr/                    # ECR repository
+│   ├── eks/                    # EKS cluster
 │   │
-│   ├── jenkins/            # Jenkins Helm release
-│   │   ├── jenkins.tf
-│   │   ├── providers.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   └── values.yaml.tpl  # Jenkins values с Kaniko agent
+│   ├── jenkins/                # ✨ NEW module
+│   │   ├── jenkins.tf         # Helm release + namespace + RBAC
+│   │   ├── providers.tf       # Kubernetes + Helm providers
+│   │   ├── variables.tf       # Module variables
+│   │   ├── outputs.tf         # Outputs (port-forward commands, password)
+│   │   └── values.yaml.tpl    # Jenkins values with Kaniko pod template
 │   │
-│   └── argo_cd/            # Argo CD + Applications
-│       ├── argo_cd.tf
-│       ├── providers.tf
-│       ├── variables.tf
-│       ├── outputs.tf
-│       ├── values.yaml      # Argo CD server config
+│   └── argo_cd/               # ✨ NEW module
+│       ├── argo_cd.tf         # Helm releases (argocd + argo-apps)
+│       ├── providers.tf       # Kubernetes + Helm providers
+│       ├── variables.tf       # Variables (gitops repo url, branch, path)
+│       ├── outputs.tf         # Outputs (port-forward commands, password)
+│       ├── values.yaml        # Argo CD server configuration
 │       └── charts/
-│           └── argo-apps/   # Helm chart для Applications
+│           └── argo-apps/     # Helm chart for Applications
 │               ├── Chart.yaml
 │               ├── values.yaml
 │               └── templates/
@@ -502,7 +505,7 @@ lesson-8-9/
 │                   └── application.yaml   # Application CR
 │
 └── charts/
-    └── django-app/         # Helm chart (для reference, не используется в GitOps)
+    └── django-app/            # Helm chart (for reference)
         ├── Chart.yaml
         ├── values.yaml
         └── templates/
@@ -514,14 +517,14 @@ lesson-8-9/
 
 ## GitOps Repository Structure (TODO)
 
-Создайте отдельный репозиторий:
+Create a separate repository:
 
 ```
 gitops-repo/
 └── charts/
     └── django-app/
         ├── Chart.yaml
-        ├── values.yaml         # Jenkins обновляет image.tag здесь!
+        ├── values.yaml         # Jenkins updates image.tag here!
         └── templates/
             ├── deployment.yaml
             ├── service.yaml
@@ -529,14 +532,14 @@ gitops-repo/
             └── configmap.yaml
 ```
 
-**values.yaml пример:**
+**values.yaml example:**
 
 ```yaml
 replicaCount: 2
 
 image:
   repository: XXXXXXXXXXXX.dkr.ecr.us-west-2.amazonaws.com/lesson-8-9-ecr
-  tag: "abc1234"              # <-- Jenkins обновляет это значение
+  tag: "abc1234"              # <-- Jenkins updates this value
   pullPolicy: IfNotPresent
 
 service:
@@ -567,9 +570,9 @@ env:
 
 ## Cleanup
 
-**ВАЖНО:** Удаление ресурсов в правильном порядке!
+**IMPORTANT:** Delete resources in correct order!
 
-### 1. Удалить Helm releases
+### 1. Delete Helm releases
 
 ```bash
 helm uninstall -n argocd argo-apps
@@ -577,7 +580,7 @@ helm uninstall -n argocd argocd
 helm uninstall -n jenkins jenkins
 ```
 
-### 2. Удалить namespace resources
+### 2. Delete namespace resources
 
 ```bash
 kubectl delete namespace django --grace-period=0 --force
@@ -585,7 +588,7 @@ kubectl delete namespace jenkins --grace-period=0 --force
 kubectl delete namespace argocd --grace-period=0 --force
 ```
 
-### 3. Удалить Terraform resources
+### 3. Delete Terraform resources
 
 ```bash
 cd lesson-8-9
@@ -593,9 +596,9 @@ cd lesson-8-9
 terraform destroy -auto-approve
 ```
 
-**Время выполнения:** ~10-15 минут
+**Execution time:** ~10-15 minutes
 
-### 4. Очистка ECR images (опционально)
+### 4. Clean ECR images (optional)
 
 ```bash
 aws ecr delete-repository --repository-name lesson-8-9-ecr --region us-west-2 --force
@@ -603,42 +606,42 @@ aws ecr delete-repository --repository-name lesson-8-9-ecr --region us-west-2 --
 
 ## TODO Checklist
 
-### Обязательные действия перед запуском:
+### Required actions before starting:
 
-- [ ] **Создать GitOps репозиторий** (отдельный от этого)
-  - [ ] Структура: `charts/django-app/`
-  - [ ] Добавить `values.yaml` с `image.repository` и `image.tag`
-  - [ ] Добавить Helm templates (можно скопировать из `lesson-8-9/charts/django-app/`)
+- [ ] **Create GitOps repository** (separate from this)
+  - [ ] Structure: `charts/django-app/`
+  - [ ] Add `values.yaml` with `image.repository` and `image.tag`
+  - [ ] Add Helm templates (can copy from `lesson-8-9/charts/django-app/`)
 
-- [ ] **Обновить `main.tf`:**
-  - [ ] Заменить `gitops_repo_url` на URL вашего GitOps репозитория
-  - [ ] Заменить `bucket_name` на уникальное имя (если нужно)
+- [ ] **Update `main.tf`:**
+  - [ ] Replace `gitops_repo_url` with your GitOps repository URL
+  - [ ] Replace `bucket_name` with unique name (if needed)
 
-- [ ] **Обновить `backend.tf`:**
-  - [ ] Заменить `bucket_name` на существующий или создать новый
+- [ ] **Update `backend.tf`:**
+  - [ ] Replace `bucket_name` with existing or create new
 
-- [ ] **Обновить `Jenkinsfile`:**
-  - [ ] Заменить `ECR_REGISTRY` на ваш AWS Account ID
-  - [ ] Заменить `GITOPS_REPO_URL` на URL GitOps репозитория
+- [ ] **Update `Jenkinsfile`:**
+  - [ ] Replace `ECR_REGISTRY` with your AWS Account ID
+  - [ ] Replace `GITOPS_REPO_URL` with GitOps repository URL
 
-- [ ] **Создать GitHub Personal Access Token:**
+- [ ] **Create GitHub Personal Access Token:**
   - [ ] https://github.com/settings/tokens
-  - [ ] Права: `repo`
-  - [ ] Добавить как credential в Jenkins с ID: `github_pat`
+  - [ ] Scope: `repo`
+  - [ ] Add as credential in Jenkins with ID: `github_pat`
 
-- [ ] **Настроить AWS credentials:**
-  - [ ] `aws configure` с правами на создание EKS, ECR, VPC, S3, DynamoDB
+- [ ] **Configure AWS credentials:**
+  - [ ] `aws configure` with permissions for EKS, ECR, VPC, S3, DynamoDB
 
-### Опциональные улучшения:
+### Optional improvements:
 
-- [ ] **IRSA для Jenkins:** ServiceAccount аннотация с IAM role ARN
-- [ ] **Secrets для GitOps repo:** Если приватный, добавить SSH key или token в Argo CD
-- [ ] **Ingress для Jenkins/Argo CD:** Вместо port-forward
-- [ ] **Prometheus + Grafana:** Для мониторинга
-- [ ] **External Secrets Operator:** Для управления secrets из AWS Secrets Manager
-- [ ] **GitHub Webhooks:** Автоматический trigger Jenkins pipeline при push
+- [ ] **IRSA for Jenkins:** ServiceAccount annotation with IAM role ARN
+- [ ] **Secrets for GitOps repo:** If private, add SSH key or token to Argo CD
+- [ ] **Ingress for Jenkins/Argo CD:** Instead of port-forward
+- [ ] **Prometheus + Grafana:** For monitoring
+- [ ] **External Secrets Operator:** For managing secrets from AWS Secrets Manager
+- [ ] **GitHub Webhooks:** Automatic trigger Jenkins pipeline on push
 
-## Полезные ссылки
+## Useful Links
 
 - **Jenkins Helm Chart:** https://github.com/jenkinsci/helm-charts
 - **Argo CD Docs:** https://argo-cd.readthedocs.io/
@@ -646,8 +649,8 @@ aws ecr delete-repository --repository-name lesson-8-9-ecr --region us-west-2 --
 - **Terraform EKS:** https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_cluster
 - **AWS ECR:** https://docs.aws.amazon.com/ecr/
 
-## Контакты и поддержка
+## Contact and Support
 
-**Автор:** Andrii Gnedash  
-**Проект:** GoIT DevOps Lesson 8-9  
-**Дата:** 2026-01-29
+**Author:** Andrii Gnedash  
+**Project:** GoIT DevOps Lesson 8-9  
+**Date:** 2026-01-29

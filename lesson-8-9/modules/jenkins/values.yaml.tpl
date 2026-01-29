@@ -19,7 +19,7 @@ controller:
     configScripts:
       welcome-message: |
         jenkins:
-          systemMessage: "Jenkins для Lesson 8-9: CI/CD с Kaniko, ECR, GitOps"
+          systemMessage: "Jenkins for Lesson 8-9: CI/CD with Kaniko, ECR, GitOps"
       
       kubernetes-cloud: |
         jenkins:

@@ -1,8 +1,8 @@
-# GitOps Repository - Пример структуры
+# GitOps Repository - Example Structure
 
-## Структура репозитория
+## Repository Structure
 
-Создайте отдельный репозиторий (например, `django-gitops-repo`) со следующей структурой:
+Create a separate repository (e.g., `django-gitops-repo`) with the following structure:
 
 ```
 django-gitops-repo/
@@ -10,7 +10,7 @@ django-gitops-repo/
 └── charts/
     └── django-app/
         ├── Chart.yaml
-        ├── values.yaml          # Jenkins обновляет image.tag здесь
+        ├── values.yaml          # Jenkins updates image.tag here
         └── templates/
             ├── deployment.yaml
             ├── service.yaml
@@ -18,7 +18,7 @@ django-gitops-repo/
             └── configmap.yaml
 ```
 
-## Файлы
+## Files
 
 ### Chart.yaml
 
@@ -69,9 +69,9 @@ env:
     value: "*"
 ```
 
-**ВАЖНО:** 
-- Замените `XXXXXXXXXXXX` на ваш AWS Account ID
-- Jenkins будет обновлять `image.tag` при каждом билде
+**IMPORTANT:** 
+- Replace `XXXXXXXXXXXX` with your AWS Account ID
+- Jenkins will update `image.tag` on each build
 
 ### templates/deployment.yaml
 
@@ -179,16 +179,16 @@ data:
   DEBUG: "False"
 ```
 
-## Создание репозитория
+## Creating Repository
 
-### 1. Создайте репозиторий на GitHub
+### 1. Create Repository on GitHub
 
 ```bash
 gh repo create django-gitops-repo --public --clone
 cd django-gitops-repo
 ```
 
-### 2. Создайте структуру
+### 2. Create Structure
 
 ```bash
 mkdir -p charts/django-app/templates
@@ -201,11 +201,11 @@ touch charts/django-app/templates/hpa.yaml
 touch charts/django-app/templates/configmap.yaml
 ```
 
-### 3. Скопируйте содержимое
+### 3. Copy Content
 
-Скопируйте содержимое файлов из примеров выше или из `lesson-8-9/charts/django-app/`
+Copy file contents from examples above or from `lesson-8-9/charts/django-app/`
 
-### 4. Закоммитьте и запушьте
+### 4. Commit and Push
 
 ```bash
 git add .
@@ -213,15 +213,15 @@ git commit -m "Initial GitOps repository structure"
 git push origin main
 ```
 
-### 5. Обновите конфигурацию
+### 5. Update Configuration
 
-Обновите URL репозитория в:
+Update repository URL in:
 - `lesson-8-9/main.tf` (module "argo_cd")
 - `Jenkinsfile` (env.GITOPS_REPO_URL)
 
-## Проверка
+## Verification
 
-После настройки Jenkins и первого запуска pipeline:
+After Jenkins setup and first pipeline run:
 
 ```bash
 cd django-gitops-repo
@@ -230,4 +230,4 @@ git pull
 git log -1
 ```
 
-Вы должны увидеть коммит от Jenkins с обновленным `image.tag` в `values.yaml`
+You should see a commit from Jenkins with updated `image.tag` in `values.yaml`
