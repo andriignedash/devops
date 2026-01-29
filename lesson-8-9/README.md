@@ -148,7 +148,36 @@ devops-gitops/
 - Branch: `main`
 - Path: `charts/django-app`
 
-### 2. Deploy Infrastructure
+### 2. Terraform Backend Bootstrap
+
+The S3 backend and DynamoDB table are created by the same Terraform project they are used to store state for. This creates a chicken-and-egg problem on first run.
+
+**First-time deployment (bootstrap):**
+
+```bash
+cd lesson-8-9
+
+# Step 1: Initialize without backend
+terraform init -backend=false
+
+# Step 2: Create only the S3 bucket and DynamoDB table
+terraform apply -target=module.s3_backend
+
+# Step 3: Re-initialize with the backend now that it exists
+terraform init -reconfigure
+```
+
+**Subsequent deployments (normal):**
+
+```bash
+cd lesson-8-9
+
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+
+### 3. Deploy Infrastructure
 
 ```bash
 cd lesson-8-9
@@ -648,6 +677,73 @@ terraform destroy -auto-approve
 ```bash
 aws ecr delete-repository --repository-name lesson-8-9-ecr --region us-west-2 --force
 ```
+
+## Runtime Verification
+
+After deployment, use these commands to verify the CI/CD pipeline is working correctly.
+
+### Check ECR Images
+
+```bash
+# List images in ECR repository
+aws ecr list-images --repository-name lesson-8-9-ecr --region us-west-2
+
+# Get detailed image info
+aws ecr describe-images --repository-name lesson-8-9-ecr --region us-west-2 --output table
+```
+
+### Check Argo CD Status
+
+```bash
+# List applications
+kubectl get applications -n argocd
+
+# Check application sync status
+kubectl get application django-app -n argocd -o jsonpath='{.status.sync.status}'
+
+# Check application health
+kubectl get application django-app -n argocd -o jsonpath='{.status.health.status}'
+```
+
+### Check Django Application
+
+```bash
+# List all resources in django namespace
+kubectl get all -n django
+
+# Check deployment image
+kubectl describe deployment -n django django-app | grep -i image
+
+# Check pod status
+kubectl get pods -n django -o wide
+
+# Check HPA status
+kubectl get hpa -n django
+```
+
+### Expected Results After Successful Pipeline
+
+| Check | Expected Result |
+|-------|-----------------|
+| Jenkins build | Green (SUCCESS) |
+| ECR images | New image with git SHA tag |
+| GitOps repo | New commit with updated image.tag |
+| Argo CD sync | Synced |
+| Argo CD health | Healthy |
+| Django pods | Running (2/2 replicas) |
+
+### Verify End-to-End Flow
+
+```bash
+# 1. Check latest commit in GitOps repo
+cd /tmp && git clone https://github.com/andriignedash/devops-gitops.git --depth 1
+cat devops-gitops/charts/django-app/values.yaml | grep -A 2 "image:"
+
+# 2. Compare with running deployment
+kubectl get deployment -n django django-app -o jsonpath='{.spec.template.spec.containers[0].image}'
+```
+
+If both show the same image tag, the pipeline completed successfully.
 
 ## TODO Checklist
 

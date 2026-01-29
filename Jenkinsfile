@@ -20,18 +20,20 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    echo "Checking out code..."
-                    checkout scm
-                    
-                    env.IMAGE_TAG = sh(
-                        script: 'git rev-parse --short HEAD',
-                        returnStdout: true
-                    ).trim()
-                    
-                    env.IMAGE_FULL = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-                    
-                    echo "Building image: ${IMAGE_FULL}"
+                container('git') {
+                    script {
+                        echo "Checking out code..."
+                        checkout scm
+                        
+                        env.IMAGE_TAG = sh(
+                            script: 'git rev-parse --short HEAD',
+                            returnStdout: true
+                        ).trim()
+                        
+                        env.IMAGE_FULL = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+                        
+                        echo "Building image: ${IMAGE_FULL}"
+                    }
                 }
             }
         }
@@ -43,7 +45,7 @@ pipeline {
                         echo "Building Docker image with Kaniko..."
                         
                         sh """
-                            echo "{\\"credsStore\\":\\"ecr-login\\"}" > /kaniko/.docker/config.json
+                            echo '{"credsStore":"ecr-login"}' > /kaniko/.docker/config.json
                         """
                         
                         sh """
@@ -67,38 +69,41 @@ pipeline {
         
         stage('Update GitOps Repo') {
             steps {
-                script {
-                    echo "Updating GitOps repository..."
-                    
-                    withCredentials([string(credentialsId: 'github_pat', variable: 'GITHUB_TOKEN')]) {
-                        sh """
-                            git config --global user.name "Jenkins CI"
-                            git config --global user.email "jenkins@ci.local"
-                            
-                            rm -rf gitops-repo
-                            
-                            GITOPS_URL_WITH_TOKEN=\$(echo ${GITOPS_REPO_URL} | sed "s|https://|https://${GITHUB_TOKEN}@|")
-                            
-                            git clone --branch ${GITOPS_BRANCH} --depth 1 \${GITOPS_URL_WITH_TOKEN} gitops-repo
-                            
-                            cd gitops-repo
-                            
-                            if [ -f "${GITOPS_VALUES_PATH}" ]; then
-                                sed -i "s|tag: .*|tag: \\"${IMAGE_TAG}\\"|g" ${GITOPS_VALUES_PATH}
+                container('git') {
+                    script {
+                        echo "Updating GitOps repository..."
+                        
+                        withCredentials([string(credentialsId: 'github_pat', variable: 'GITHUB_TOKEN')]) {
+                            sh """
+                                git config --global user.name "Jenkins CI"
+                                git config --global user.email "jenkins@ci.local"
+                                git config --global --add safe.directory /home/jenkins/agent/workspace/*
                                 
-                                echo "Updated values.yaml:"
-                                grep -A 2 "image:" ${GITOPS_VALUES_PATH}
+                                rm -rf gitops-repo
                                 
-                                git add ${GITOPS_VALUES_PATH}
-                                git commit -m "Update image tag to ${IMAGE_TAG}" || echo "No changes to commit"
-                                git push origin ${GITOPS_BRANCH}
+                                GITOPS_URL_WITH_TOKEN=\$(echo ${GITOPS_REPO_URL} | sed "s|https://|https://${GITHUB_TOKEN}@|")
                                 
-                                echo "GitOps repo updated successfully!"
-                            else
-                                echo "ERROR: values.yaml not found at ${GITOPS_VALUES_PATH}"
-                                exit 1
-                            fi
-                        """
+                                git clone --branch ${GITOPS_BRANCH} --depth 1 \${GITOPS_URL_WITH_TOKEN} gitops-repo
+                                
+                                cd gitops-repo
+                                
+                                if [ -f "${GITOPS_VALUES_PATH}" ]; then
+                                    sed -i "s|tag:.*|tag: \\"${IMAGE_TAG}\\"|g" ${GITOPS_VALUES_PATH}
+                                    
+                                    echo "Updated values.yaml:"
+                                    grep -A 2 "image:" ${GITOPS_VALUES_PATH}
+                                    
+                                    git add ${GITOPS_VALUES_PATH}
+                                    git commit -m "Update image tag to ${IMAGE_TAG}" || echo "No changes to commit"
+                                    git push origin ${GITOPS_BRANCH}
+                                    
+                                    echo "GitOps repo updated successfully!"
+                                else
+                                    echo "ERROR: values.yaml not found at ${GITOPS_VALUES_PATH}"
+                                    exit 1
+                                fi
+                            """
+                        }
                     }
                 }
             }

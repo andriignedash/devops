@@ -45,6 +45,14 @@ controller:
                           - envVar:
                               key: "DOCKER_CONFIG"
                               value: "/kaniko/.docker"
+                          - envVar:
+                              key: "PATH"
+                              value: "/usr/local/bin:/kaniko:/busybox:/tools"
+                      - name: "git"
+                        image: "alpine/git:latest"
+                        command: "/bin/cat"
+                        ttyEnabled: true
+                        workingDir: "/home/jenkins/agent"
                     volumes:
                       - emptyDirVolume:
                           mountPath: "/home/jenkins/agent"
@@ -52,8 +60,23 @@ controller:
                       - emptyDirVolume:
                           mountPath: "/kaniko/.docker"
                           memory: false
+                      - emptyDirVolume:
+                          mountPath: "/tools"
+                          memory: false
                     yaml: |
                       spec:
+                        initContainers:
+                        - name: ecr-credential-helper
+                          image: amazon/aws-cli:latest
+                          command:
+                          - /bin/sh
+                          - -c
+                          - |
+                            curl -Lo /tools/docker-credential-ecr-login https://amazon-ecr-credential-helper-releases.s3.us-east-2.amazonaws.com/0.7.1/linux-amd64/docker-credential-ecr-login
+                            chmod +x /tools/docker-credential-ecr-login
+                          volumeMounts:
+                          - name: tools
+                            mountPath: /tools
                         containers:
                         - name: kaniko
                           resources:
@@ -63,6 +86,20 @@ controller:
                             limits:
                               cpu: 1000m
                               memory: 2Gi
+                          volumeMounts:
+                          - name: tools
+                            mountPath: /tools
+                        - name: git
+                          resources:
+                            requests:
+                              cpu: 100m
+                              memory: 128Mi
+                            limits:
+                              cpu: 200m
+                              memory: 256Mi
+                        volumes:
+                        - name: tools
+                          emptyDir: {}
 
   resources:
     requests:
