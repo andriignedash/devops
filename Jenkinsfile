@@ -3,6 +3,10 @@ pipeline {
         label 'kaniko'
     }
     
+    options {
+        skipDefaultCheckout(true)
+    }
+    
     environment {
         ECR_REGISTRY = "${env.ECR_REGISTRY ?: 'XXXXXXXXXXXX.dkr.ecr.us-west-2.amazonaws.com'}"
         ECR_REPOSITORY = "${env.ECR_REPOSITORY ?: 'lesson-8-9-ecr'}"
@@ -21,9 +25,9 @@ pipeline {
         stage('Checkout') {
             steps {
                 container('git') {
+                    checkout scm
                     script {
-                        echo "Checking out code..."
-                        checkout scm
+                        sh 'git config --global --add safe.directory "$(pwd)"'
                         
                         env.IMAGE_TAG = sh(
                             script: 'git rev-parse --short HEAD',
@@ -122,7 +126,7 @@ pipeline {
         }
         always {
             echo "Cleaning up workspace..."
-            cleanWs()
+            deleteDir()
         }
     }
 }
