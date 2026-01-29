@@ -40,15 +40,16 @@ provider "helm" {
 }
 
 # S3 + DynamoDB (backend resources)
-module "s3_backend" {
-  source      = "./modules/s3-backend"
-  bucket_name = "andrii-gnedash-lesson-8-9-tfstate-001"
-  table_name  = "terraform-locks-lesson-8-9"
-
-  tags = {
-    Project = "lesson-8-9"
-  }
-}
+# NOTE: Backend resources created separately via bootstrap-backend/
+# module "s3_backend" {
+#   source      = "./modules/s3-backend"
+#   bucket_name = "andrii-gnedash-lesson-8-9-tfstate-001"
+#   table_name  = "terraform-locks-lesson-8-9"
+#
+#   tags = {
+#     Project = "lesson-8-9"
+#   }
+# }
 
 # VPC
 module "vpc" {
@@ -113,8 +114,6 @@ module "jenkins" {
   tags = {
     Project = "lesson-8-9"
   }
-
-  depends_on = [module.eks]
 }
 
 # Argo CD
@@ -135,6 +134,4 @@ module "argo_cd" {
   tags = {
     Project = "lesson-8-9"
   }
-
-  depends_on = [module.eks]
 }

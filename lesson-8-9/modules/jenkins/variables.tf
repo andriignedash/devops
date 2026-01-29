@@ -22,7 +22,7 @@ variable "namespace" {
 
 variable "chart_version" {
   type        = string
-  default     = "5.1.27"
+  default     = "5.8.3"
   description = "Jenkins Helm chart version"
 }
 

@@ -39,6 +39,8 @@ resource "helm_release" "jenkins" {
   chart      = "jenkins"
   version    = var.chart_version
   namespace  = kubernetes_namespace.jenkins.metadata[0].name
+  timeout    = 900
+  wait       = true
 
   values = [
     templatefile("${path.module}/values.yaml.tpl", {

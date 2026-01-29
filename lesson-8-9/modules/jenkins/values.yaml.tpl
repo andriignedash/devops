@@ -2,15 +2,17 @@ controller:
   serviceType: ${service_type}
   
   installPlugins:
-    - kubernetes:4253.v7700d91739e5
-    - workflow-aggregator:596.v8c21c963d92d
-    - git:5.2.2
-    - configuration-as-code:1836.vccda_4a_122a_a_e
-    - credentials:1371.vfee6b_095f0a_3
-    - github:1.39.0
-    - pipeline-utility-steps:2.16.2
-    - job-dsl:1.87
-    - blueocean:1.27.14
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - configuration-as-code
+    - credentials
+    - github
+    - pipeline-utility-steps
+    - job-dsl
+  
+  installLatestPlugins: true
+  installLatestSpecifiedPlugins: true
   
   serviceAccountName: jenkins
   

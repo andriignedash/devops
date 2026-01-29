@@ -1,9 +1,11 @@
 output "state_bucket_name" {
-  value = module.s3_backend.bucket_name
+  value       = "andrii-gnedash-lesson-8-9-tfstate-001"
+  description = "S3 bucket for Terraform state (created via bootstrap-backend)"
 }
 
 output "lock_table_name" {
-  value = module.s3_backend.dynamodb_table_name
+  value       = "terraform-locks-lesson-8-9"
+  description = "DynamoDB table for Terraform locks (created via bootstrap-backend)"
 }
 
 output "vpc_id" {
