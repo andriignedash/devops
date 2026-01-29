@@ -1,47 +1,40 @@
 # Quick Start: Lesson 8-9
 
-## ⚠️ BEFORE STARTING - IMPORTANT!
+## Repository Structure
 
-### 1. Create GitOps Repository
+This project uses **two repositories**:
 
-Create a separate repository with structure:
+| Repository | URL | Branch |
+|------------|-----|--------|
+| **Infrastructure** | https://github.com/andriignedash/devops | `lesson-8-9` |
+| **GitOps** | https://github.com/andriignedash/devops-gitops | `main` |
 
-```
-gitops-repo/
-└── charts/
-    └── django-app/
-        ├── Chart.yaml
-        ├── values.yaml    # Important: image.repository and image.tag
-        └── templates/
-            ├── deployment.yaml
-            ├── service.yaml
-            ├── hpa.yaml
-            └── configmap.yaml
-```
+## ⚠️ BEFORE STARTING
 
-You can copy from `lesson-8-9/charts/django-app/`
+### 1. Create GitHub Personal Access Token
 
-### 2. Update Configuration
+1. Go to https://github.com/settings/tokens
+2. Generate new token with `repo` scope (full control)
+3. Save token (will be needed for Jenkins credential)
 
-**main.tf (line ~98):**
-```hcl
-gitops_repo_url = "https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git"
-```
+### 2. Update ECR Registry (after terraform apply)
 
-**Jenkinsfile (lines 7-9):**
+After deploying infrastructure, update the AWS Account ID:
+
+**Jenkinsfile (line 7):**
 ```groovy
 ECR_REGISTRY = "XXXXXXXXXXXX.dkr.ecr.us-west-2.amazonaws.com"
-ECR_REPOSITORY = "lesson-8-9-ecr"
-GITOPS_REPO_URL = "https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git"
 ```
 
-### 3. Create GitHub Personal Access Token
+**GitOps repo values.yaml:**
+```yaml
+image:
+  repository: XXXXXXXXXXXX.dkr.ecr.us-west-2.amazonaws.com/lesson-8-9-ecr
+```
 
-1. https://github.com/settings/tokens
-2. Scope: `repo` (full control)
-3. Save token (will be needed for Jenkins)
+Replace `XXXXXXXXXXXX` with your actual AWS Account ID.
 
-## 🚀 Launch
+## 🚀 Deploy Infrastructure
 
 ```bash
 cd lesson-8-9
@@ -51,6 +44,11 @@ terraform apply -auto-approve
 ```
 
 ⏱️ Time: ~15-20 minutes
+
+### Get ECR URL:
+```bash
+terraform output ecr_repository_url
+```
 
 ## 🔧 Jenkins Setup
 
@@ -68,20 +66,23 @@ kubectl get secret -n jenkins jenkins \
 echo
 ```
 
-### Add GitHub PAT:
-1. **Manage Jenkins** → **Credentials**
+### Add GitHub PAT Credential:
+1. **Manage Jenkins** → **Credentials** → **System** → **Global credentials**
 2. **Add Credentials**:
    - Kind: `Secret text`
    - Secret: (your GitHub PAT)
    - ID: `github_pat`
+   - Description: GitHub Personal Access Token
 
-### Create Pipeline:
-1. **New Item** → **Pipeline**
-2. **Pipeline script from SCM**
-   - SCM: Git
-   - Repository URL: (this repository)
+### Create Pipeline Job:
+1. **New Item** → **Pipeline** → Name: `django-app-pipeline`
+2. **Pipeline**:
+   - Definition: `Pipeline script from SCM`
+   - SCM: `Git`
+   - Repository URL: `https://github.com/andriignedash/devops`
    - Branch: `*/lesson-8-9`
    - Script Path: `Jenkinsfile`
+3. **Save**
 
 ## 📊 Argo CD Setup
 
@@ -101,48 +102,68 @@ echo
 
 Login: `admin`
 
-## ✅ Verification
+### Verify Application:
+- Go to **Applications** → `django-app`
+- Status should show: Synced / Healthy (after first successful Jenkins build)
+
+## ✅ Verification Commands
 
 ```bash
+# Check EKS nodes
 kubectl get nodes
 
+# Check Jenkins
 kubectl get pods -n jenkins
 
+# Check Argo CD
 kubectl get pods -n argocd
-
 kubectl get applications -n argocd
 
+# Check Django app (after first deploy)
 kubectl get all -n django
 ```
 
 ## 🔄 Full CI/CD Cycle
 
-1. **Push code** → GitHub
-2. **Run Jenkins Pipeline** (Build Now)
-3. **Jenkins**:
-   - Build image with Kaniko
-   - Push to ECR
-   - Update GitOps repo
-4. **Argo CD**:
-   - Automatically detects changes
-   - Syncs with cluster
-5. **Check deployment**:
-   ```bash
-   kubectl get pods -n django -w
-   ```
+```
+1. Developer pushes code to devops repo (lesson-8-9)
+         ↓
+2. Jenkins Pipeline runs:
+   - Checkout code
+   - Build Docker image with Kaniko
+   - Push to ECR (tag + latest)
+   - Clone devops-gitops repo
+   - Update image.tag in values.yaml
+   - Commit and push to main
+         ↓
+3. Argo CD detects change (~30 seconds)
+         ↓
+4. Auto-sync deploys to EKS namespace 'django'
+         ↓
+5. Application updated with zero downtime
+```
+
+### Test the Pipeline:
+1. Run **Build Now** in Jenkins
+2. Watch Argo CD UI for sync
+3. Check pods: `kubectl get pods -n django -w`
 
 ## 🧹 Cleanup
 
 ```bash
+# Delete Helm releases
 helm uninstall -n argocd argo-apps
 helm uninstall -n argocd argocd
 helm uninstall -n jenkins jenkins
 
+# Delete namespaces
 kubectl delete namespace django jenkins argocd
 
+# Destroy infrastructure
+cd lesson-8-9
 terraform destroy -auto-approve
 ```
 
 ## 📚 Detailed Documentation
 
-See [README.md](README.md)
+See [README.md](README.md) for complete documentation.

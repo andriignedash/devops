@@ -62,23 +62,77 @@
   - S3 Bucket, DynamoDB Table
   - IAM Roles and Policies
 
+## Repository Separation
+
+This project uses **two separate repositories** following GitOps best practices:
+
+### Why Two Repositories?
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     Repository Separation                            │
+│                                                                       │
+│  Repo A: devops (Infrastructure + CI)                               │
+│  ├─ Terraform modules (VPC, EKS, ECR, Jenkins, Argo CD)            │
+│  ├─ Jenkinsfile (CI/CD pipeline)                                    │
+│  ├─ Application source code (docker-django-nginx/)                  │
+│  └─ Infrastructure documentation                                    │
+│                                                                       │
+│  Repo B: devops-gitops (GitOps Source of Truth)                     │
+│  ├─ Helm charts for application deployment                          │
+│  ├─ values.yaml (image tag updated by Jenkins)                      │
+│  └─ Kubernetes manifests via Helm templates                         │
+│                                                                       │
+│  Benefits:                                                           │
+│  - Clear separation of concerns (CI vs CD)                          │
+│  - Argo CD only watches GitOps repo (security)                      │
+│  - Infrastructure changes don't trigger app deploys                 │
+│  - Audit trail for application deployments                          │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### CI/CD Flow Between Repositories
+
+```
+Developer → Git push (Repo A: devops)
+         → Jenkins Pipeline
+         → Build Docker image (Kaniko)
+         → Push to ECR
+         → Git commit (Repo B: devops-gitops)
+         → Argo CD detects change
+         → Auto-sync to Kubernetes
+         → Application deployed/updated
+```
+
+### Repository URLs
+
+| Repository | URL | Purpose |
+|------------|-----|---------|
+| **Repo A** (Infrastructure) | https://github.com/andriignedash/devops | Terraform, Jenkins, Argo CD config, Jenkinsfile |
+| **Repo B** (GitOps) | https://github.com/andriignedash/devops-gitops | Helm charts, values.yaml (source of truth) |
+
 ## Quick Start
 
 ### 1. Repository Setup
 
-#### A) Main Repository (current)
+#### A) Infrastructure Repository (this repo)
 
-This repository contains:
+**URL:** https://github.com/andriignedash/devops (branch: `lesson-8-9`)
+
+Contains:
 - Terraform infrastructure (`lesson-8-9/`)
 - Django application source code (`docker-django-nginx/app/`)
 - **Jenkinsfile** (in repository root)
+- Jenkins and Argo CD Terraform modules
 
-#### B) GitOps Repository (TODO: create separately)
+#### B) GitOps Repository
 
-Create a separate GitOps repository with structure:
+**URL:** https://github.com/andriignedash/devops-gitops (branch: `main`)
 
+Contains:
 ```
-gitops-repo/
+devops-gitops/
+├── README.md
 └── charts/
     └── django-app/
         ├── Chart.yaml
@@ -86,18 +140,13 @@ gitops-repo/
         └── templates/
             ├── deployment.yaml
             ├── service.yaml
-            ├── hpa.yaml
-            └── configmap.yaml
+            └── hpa.yaml
 ```
 
-**TODO:** Update `main.tf` with your GitOps repository URL:
-
-```hcl
-module "argo_cd" {
-  # ...
-  gitops_repo_url = "https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git"
-}
-```
+**Note:** The GitOps repository is already configured. Argo CD is set to watch:
+- Repository: `https://github.com/andriignedash/devops-gitops.git`
+- Branch: `main`
+- Path: `charts/django-app`
 
 ### 2. Deploy Infrastructure
 
@@ -515,12 +564,13 @@ lesson-8-9/
             └── configmap.yaml
 ```
 
-## GitOps Repository Structure (TODO)
+## GitOps Repository Structure
 
-Create a separate repository:
+**Repository URL:** https://github.com/andriignedash/devops-gitops
 
 ```
-gitops-repo/
+devops-gitops/
+├── README.md
 └── charts/
     └── django-app/
         ├── Chart.yaml
@@ -528,18 +578,17 @@ gitops-repo/
         └── templates/
             ├── deployment.yaml
             ├── service.yaml
-            ├── hpa.yaml
-            └── configmap.yaml
+            └── hpa.yaml
 ```
 
-**values.yaml example:**
+**Current values.yaml:**
 
 ```yaml
 replicaCount: 2
 
 image:
   repository: XXXXXXXXXXXX.dkr.ecr.us-west-2.amazonaws.com/lesson-8-9-ecr
-  tag: "abc1234"              # <-- Jenkins updates this value
+  tag: "initial"              # <-- Jenkins updates this value automatically
   pullPolicy: IfNotPresent
 
 service:
@@ -560,13 +609,9 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 6
   targetCPUUtilizationPercentage: 70
-
-env:
-  - name: DJANGO_SETTINGS_MODULE
-    value: config.settings
-  - name: DEBUG
-    value: "False"
 ```
+
+**Note:** After `terraform apply`, update `image.repository` in GitOps repo with actual ECR URL from `terraform output ecr_repository_url`.
 
 ## Cleanup
 
@@ -606,27 +651,31 @@ aws ecr delete-repository --repository-name lesson-8-9-ecr --region us-west-2 --
 
 ## TODO Checklist
 
-### Required actions before starting:
+### Completed:
 
-- [ ] **Create GitOps repository** (separate from this)
-  - [ ] Structure: `charts/django-app/`
-  - [ ] Add `values.yaml` with `image.repository` and `image.tag`
-  - [ ] Add Helm templates (can copy from `lesson-8-9/charts/django-app/`)
+- [x] **GitOps repository created:** https://github.com/andriignedash/devops-gitops
+  - [x] Structure: `charts/django-app/`
+  - [x] `values.yaml` with `image.repository` and `image.tag`
+  - [x] Helm templates (deployment, service, hpa)
 
-- [ ] **Update `main.tf`:**
-  - [ ] Replace `gitops_repo_url` with your GitOps repository URL
-  - [ ] Replace `bucket_name` with unique name (if needed)
+- [x] **`main.tf` updated:**
+  - [x] `gitops_repo_url` set to `https://github.com/andriignedash/devops-gitops.git`
+  - [x] `gitops_branch` set to `main`
+  - [x] `app_chart_path` set to `charts/django-app`
 
-- [ ] **Update `backend.tf`:**
-  - [ ] Replace `bucket_name` with existing or create new
+- [x] **`Jenkinsfile` updated:**
+  - [x] `GITOPS_REPO_URL` set to `https://github.com/andriignedash/devops-gitops.git`
 
-- [ ] **Update `Jenkinsfile`:**
-  - [ ] Replace `ECR_REGISTRY` with your AWS Account ID
-  - [ ] Replace `GITOPS_REPO_URL` with GitOps repository URL
+### Required actions before deployment:
+
+- [ ] **Update ECR settings after terraform apply:**
+  - [ ] Get ECR URL: `terraform output ecr_repository_url`
+  - [ ] Update `Jenkinsfile`: Replace `XXXXXXXXXXXX` in `ECR_REGISTRY` with your AWS Account ID
+  - [ ] Update GitOps repo `values.yaml`: Replace `XXXXXXXXXXXX` in `image.repository`
 
 - [ ] **Create GitHub Personal Access Token:**
   - [ ] https://github.com/settings/tokens
-  - [ ] Scope: `repo`
+  - [ ] Scope: `repo` (full control of private repositories)
   - [ ] Add as credential in Jenkins with ID: `github_pat`
 
 - [ ] **Configure AWS credentials:**

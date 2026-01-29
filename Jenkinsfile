@@ -8,7 +8,7 @@ pipeline {
         ECR_REPOSITORY = "${env.ECR_REPOSITORY ?: 'lesson-8-9-ecr'}"
         AWS_REGION = "${env.AWS_REGION ?: 'us-west-2'}"
         
-        GITOPS_REPO_URL = "${env.GITOPS_REPO_URL ?: 'https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git'}"
+        GITOPS_REPO_URL = "${env.GITOPS_REPO_URL ?: 'https://github.com/andriignedash/devops-gitops.git'}"
         GITOPS_BRANCH = "${env.GITOPS_BRANCH ?: 'main'}"
         GITOPS_VALUES_PATH = "${env.GITOPS_VALUES_PATH ?: 'charts/django-app/values.yaml'}"
         

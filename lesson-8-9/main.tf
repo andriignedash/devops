@@ -127,7 +127,7 @@ module "argo_cd" {
 
   namespace = "argocd"
 
-  gitops_repo_url = "https://github.com/YOUR_USERNAME/YOUR_GITOPS_REPO.git"
+  gitops_repo_url = "https://github.com/andriignedash/devops-gitops.git"
   gitops_branch   = "main"
   app_namespace   = "django"
   app_chart_path  = "charts/django-app"
