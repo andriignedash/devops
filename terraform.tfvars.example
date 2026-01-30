@@ -1,0 +1,38 @@
+aws_region = "us-west-2"
+project    = "db-module-hw"
+
+vpc_cidr_block     = "10.0.0.0/16"
+public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+
+create_db = true
+
+use_aurora            = false
+aurora_instance_count = 1
+
+db_engine         = "postgres"
+db_engine_version = "15.4"
+db_instance_class = "db.t3.micro"
+
+db_name     = "appdb"
+db_username = "dbadmin"
+db_password = "CHANGE_ME_SECURE_PASSWORD_123!"
+
+db_storage_gb     = 20
+db_max_storage_gb = 100
+
+db_multi_az            = false
+db_publicly_accessible = false
+
+db_backup_retention_days = 7
+db_deletion_protection   = false
+db_skip_final_snapshot   = true
+db_apply_immediately     = false
+
+db_parameter_overrides = {}
+
+tags = {
+  Environment = "dev"
+  Owner       = "homework"
+}
