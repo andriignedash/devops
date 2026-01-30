@@ -52,11 +52,14 @@ locals {
   parameter_group_family = var.parameter_group_family != "" ? var.parameter_group_family : local.auto_parameter_family
 
   base_postgres_params = {
+    "max_connections"            = "200"
     "log_statement"              = "all"
+    "work_mem"                   = "4096"
     "log_min_duration_statement" = "1000"
   }
 
   base_mysql_params = {
+    "max_connections" = "200"
     "slow_query_log"  = "1"
     "long_query_time" = "1"
   }

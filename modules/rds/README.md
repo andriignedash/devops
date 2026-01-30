@@ -239,10 +239,13 @@ With Aurora:
 ## Default Parameters
 
 ### PostgreSQL
+- `max_connections`: 200
 - `log_statement`: all
+- `work_mem`: 4096 (KB)
 - `log_min_duration_statement`: 1000ms
 
 ### MySQL
+- `max_connections`: 200
 - `slow_query_log`: 1
 - `long_query_time`: 1s
 
