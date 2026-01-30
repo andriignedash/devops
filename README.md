@@ -16,6 +16,22 @@ This repository contains a reusable Terraform module for AWS RDS and Aurora data
     └── rds/                 # RDS/Aurora module
 ```
 
+## Backend Configuration
+
+This project uses **local backend** by default to avoid accidental costs during homework evaluation. For production use, switch to S3 + DynamoDB backend:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "your-tfstate-bucket"
+    key            = "rds-module/terraform.tfstate"
+    region         = "us-west-2"
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+  }
+}
+```
+
 ## Quick Start
 
 1. Initialize Terraform:
