@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "project" {
   description = "Project name used for resource naming"
   type        = string
-  default     = "db-module-hw"
+  default     = "final-project"
 }
 
 variable "tags" {
@@ -38,6 +38,72 @@ variable "availability_zones" {
   description = "List of availability zones"
   type        = list(string)
   default     = ["us-west-2a", "us-west-2b", "us-west-2c"]
+}
+
+variable "ecr_repository_name" {
+  description = "ECR repository name"
+  type        = string
+  default     = "django-app"
+}
+
+variable "eks_cluster_name" {
+  description = "EKS cluster name"
+  type        = string
+  default     = "final-project-eks"
+}
+
+variable "eks_cluster_version" {
+  description = "EKS Kubernetes version"
+  type        = string
+  default     = "1.28"
+}
+
+variable "eks_node_instance_types" {
+  description = "EKS node group instance types"
+  type        = list(string)
+  default     = ["t3.medium"]
+}
+
+variable "eks_node_desired_size" {
+  description = "EKS node group desired size"
+  type        = number
+  default     = 2
+}
+
+variable "eks_node_min_size" {
+  description = "EKS node group minimum size"
+  type        = number
+  default     = 1
+}
+
+variable "eks_node_max_size" {
+  description = "EKS node group maximum size"
+  type        = number
+  default     = 4
+}
+
+variable "jenkins_chart_version" {
+  description = "Jenkins Helm chart version"
+  type        = string
+  default     = "4.6.1"
+}
+
+variable "argocd_chart_version" {
+  description = "Argo CD Helm chart version"
+  type        = string
+  default     = "5.51.6"
+}
+
+variable "monitoring_chart_version" {
+  description = "kube-prometheus-stack Helm chart version"
+  type        = string
+  default     = "55.5.0"
+}
+
+variable "gitops_repo_url" {
+  description = "Git repo URL for Argo CD (charts/django-app)"
+  type        = string
+  default     = "https://github.com/REPLACE_ME/REPLACE_ME.git"
 }
 
 variable "create_db" {
@@ -89,7 +155,7 @@ variable "db_username" {
 }
 
 variable "db_password" {
-  description = "Master password for the database (required only when create_db=true)"
+  description = "Master password for the database (required when create_db=true)"
   type        = string
   default     = ""
   sensitive   = true

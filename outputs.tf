@@ -13,6 +13,16 @@ output "private_subnet_ids" {
   value       = module.vpc.private_subnet_ids
 }
 
+output "eks_cluster_name" {
+  description = "EKS cluster name"
+  value       = module.eks.cluster_name
+}
+
+output "ecr_repository_url" {
+  description = "ECR repository URL"
+  value       = module.ecr.repository_url
+}
+
 output "db_endpoint" {
   description = "Database endpoint"
   value       = var.create_db ? module.rds[0].endpoint : null
@@ -28,23 +38,52 @@ output "db_port" {
   value       = var.create_db ? module.rds[0].port : null
 }
 
-output "db_security_group_id" {
-  description = "Database security group ID"
-  value       = var.create_db ? module.rds[0].security_group_id : null
+output "jenkins_namespace" {
+  description = "Jenkins namespace"
+  value       = module.jenkins.namespace
 }
 
-output "db_subnet_group_name" {
-  description = "Database subnet group name"
-  value       = var.create_db ? module.rds[0].subnet_group_name : null
+output "jenkins_service_name" {
+  description = "Jenkins service name"
+  value       = module.jenkins.service_name
 }
 
-output "db_identifier" {
-  description = "Database identifier (RDS instance or Aurora cluster)"
-  value       = var.create_db ? (var.use_aurora ? module.rds[0].cluster_id : module.rds[0].db_identifier) : null
+output "jenkins_port_forward_command" {
+  description = "Command to port-forward Jenkins"
+  value       = module.jenkins.port_forward_command
 }
 
-output "db_connection_string" {
-  description = "Database connection string template"
-  value       = var.create_db ? module.rds[0].connection_string : null
-  sensitive   = false
+output "argocd_namespace" {
+  description = "Argo CD namespace"
+  value       = module.argo_cd.namespace
+}
+
+output "argocd_server_service" {
+  description = "Argo CD server service name"
+  value       = module.argo_cd.argocd_server_service
+}
+
+output "argocd_port_forward_command" {
+  description = "Command to port-forward Argo CD"
+  value       = module.argo_cd.port_forward_command
+}
+
+output "grafana_namespace" {
+  description = "Grafana (monitoring) namespace"
+  value       = module.monitoring.namespace
+}
+
+output "grafana_service_name" {
+  description = "Grafana service name"
+  value       = module.monitoring.grafana_service_name
+}
+
+output "grafana_port_forward_command" {
+  description = "Command to port-forward Grafana"
+  value       = module.monitoring.port_forward_grafana_command
+}
+
+output "prometheus_service_name" {
+  description = "Prometheus service name"
+  value       = module.monitoring.prometheus_service_name
 }

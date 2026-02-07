@@ -1,0 +1,22 @@
+pipeline {
+  agent any
+  environment {
+    AWS_REGION = credentials('aws-region')
+    ECR_REGISTRY = credentials('ecr-registry-url')
+    ECR_REPOSITORY = credentials('ecr-repository-name')
+    IMAGE_TAG = "${env.BUILD_NUMBER}"
+  }
+  stages {
+    stage('Build') {
+      steps {
+        sh 'docker build -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .'
+      }
+    }
+    stage('Push') {
+      steps {
+        sh 'aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}'
+        sh 'docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}'
+      }
+    }
+  }
+}

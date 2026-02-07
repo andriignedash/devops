@@ -1,139 +1,57 @@
-# Terraform RDS/Aurora Module Homework
+# Final Project: Terraform AWS Infrastructure
 
-This repository contains a reusable Terraform module for AWS RDS and Aurora databases.
+VPC, EKS, RDS, ECR, Jenkins, Argo CD, Prometheus, Grafana on AWS. Terraform 1.5+ and AWS provider 5.x.
 
 ## Structure
 
-```
-.
-├── main.tf                  # Root module configuration
-├── variables.tf             # Root variables
-├── outputs.tf               # Root outputs
-├── backend.tf               # Terraform backend configuration
-├── terraform.tfvars.example # Example variables file
-└── modules/
-    ├── vpc/                 # VPC module
-    └── rds/                 # RDS/Aurora module
-```
+- `bootstrap-backend/` - S3 + DynamoDB for state (run first, local backend)
+- `modules/s3-backend` - Same resources as module (bootstrap creates them)
+- `modules/vpc` - VPC, subnets, NAT
+- `modules/ecr` - ECR repository
+- `modules/eks` - EKS cluster, node group, OIDC, EBS CSI addon
+- `modules/rds` - RDS or Aurora
+- `modules/jenkins` - Jenkins (Helm) in namespace jenkins
+- `modules/argo_cd` - Argo CD (Helm) in namespace argocd
+- `modules/monitoring` - kube-prometheus-stack (Prometheus + Grafana) in namespace monitoring
+- `charts/django-app` - Helm chart for Django app
+- `Django/` - Django app, Dockerfile, Jenkinsfile, docker-compose
 
-## Backend Configuration
+## Prerequisites
 
-This project uses **local backend** by default to avoid accidental costs during homework evaluation. For production use, switch to S3 + DynamoDB backend:
+- Terraform >= 1.5.0
+- AWS CLI configured
+- kubectl
 
-```hcl
-terraform {
-  backend "s3" {
-    bucket         = "your-tfstate-bucket"
-    key            = "rds-module/terraform.tfstate"
-    region         = "us-west-2"
-    dynamodb_table = "terraform-locks"
-    encrypt        = true
-  }
-}
-```
+## Backend
 
-## Quick Start
+1. Go to [QUICK_START.md](QUICK_START.md) and follow steps 1-2 to bootstrap and configure the S3 backend.
+2. Do not create the S3 bucket or DynamoDB table from the root backend config; bootstrap creates them.
 
-1. Initialize Terraform:
+## Apply
 
-```bash
-terraform init
-```
-
-2. Copy and configure variables:
+After backend is configured:
 
 ```bash
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your values
-```
-
-3. Plan without creating DB (default):
-
-```bash
+# Set db_password if create_db = true
+terraform init -reconfigure
 terraform plan
-```
-
-4. Plan with DB creation:
-
-```bash
-terraform plan -var="create_db=true" -var="db_password=YourSecurePassword123!"
-```
-
-5. Apply:
-
-```bash
 terraform apply
 ```
 
-## Module Features
+## After apply
 
-### RDS Module (modules/rds)
+1. Configure kubeconfig: `aws eks update-kubeconfig --region <region> --name <eks_cluster_name>`
+2. Check namespaces: `kubectl get all -n jenkins`, `kubectl get all -n argocd`, `kubectl get all -n monitoring`
+3. Port-forward:
+   - Jenkins: `kubectl port-forward svc/jenkins 8080:8080 -n jenkins`
+   - Argo CD: `kubectl port-forward svc/argocd-server 8081:443 -n argocd`
+   - Grafana: `kubectl port-forward svc/kube-prometheus-stack-grafana 3000:80 -n monitoring`
 
-- Supports both single RDS instances and Aurora clusters
-- PostgreSQL and MySQL engines
-- Automatic parameter group family detection
-- Configurable security groups
-- Encryption enabled by default
-- Performance Insights support
+## Destroy
 
-See [modules/rds/README.md](modules/rds/README.md) for detailed documentation.
+Destroy order: remove Helm releases (Jenkins, Argo CD, monitoring), then EKS, then RDS, VPC. Run `terraform destroy`; if it fails, destroy EKS node group and cluster first, then RDS, then VPC. Do not destroy the S3 backend bucket from this project; use bootstrap-backend or delete manually after state is migrated.
 
 ## Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| aws_region | AWS region | us-west-2 |
-| project | Project name for resource naming | db-module-hw |
-| create_db | Whether to create database | false |
-| use_aurora | Use Aurora instead of RDS | false |
-| db_engine | Database engine (postgres/mysql) | postgres |
-| db_password | Database password (required if create_db=true) | "" |
-
-See `variables.tf` for complete list.
-
-## Outputs
-
-When `create_db=true`:
-
-- `db_endpoint` - Database endpoint
-- `db_reader_endpoint` - Aurora reader endpoint (Aurora only)
-- `db_port` - Database port
-- `db_security_group_id` - Security group ID
-- `db_connection_string` - Connection string template
-
-## Examples
-
-### Create PostgreSQL RDS instance
-
-```bash
-terraform apply \
-  -var="create_db=true" \
-  -var="db_password=SecurePass123!" \
-  -var="db_engine=postgres"
-```
-
-### Create Aurora PostgreSQL cluster
-
-```bash
-terraform apply \
-  -var="create_db=true" \
-  -var="use_aurora=true" \
-  -var="aurora_instance_count=2" \
-  -var="db_instance_class=db.r6g.large" \
-  -var="db_password=SecurePass123!"
-```
-
-### Create MySQL RDS instance
-
-```bash
-terraform apply \
-  -var="create_db=true" \
-  -var="db_engine=mysql" \
-  -var="db_password=SecurePass123!"
-```
-
-## Cleanup
-
-```bash
-terraform destroy
-```
+See `variables.tf`. Sensitive: `db_password` (no default when create_db is true). Key: `gitops_repo_url` for Argo CD (path charts/django-app).

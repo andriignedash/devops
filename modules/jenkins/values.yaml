@@ -1,0 +1,13 @@
+controller:
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - configuration-as-code
+  adminUser: "admin"
+  adminPassword: "admin"
+  serviceType: ClusterIP
+  servicePort: 8080
+
+agent:
+  enabled: false
