@@ -1,6 +1,6 @@
 output "argocd_server_service" {
   description = "Argo CD server service name"
-  value       = "argocd-server"
+  value       = "argo-cd-argocd-server"
 }
 
 output "namespace" {
@@ -16,5 +16,5 @@ output "initial_admin_password" {
 
 output "port_forward_command" {
   description = "Command to port-forward Argo CD server"
-  value       = "kubectl port-forward svc/argocd-server 8081:443 -n argocd"
+  value       = "kubectl port-forward svc/argo-cd-argocd-server 8081:443 -n argocd"
 }
