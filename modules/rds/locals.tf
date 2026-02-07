@@ -6,7 +6,7 @@ locals {
   port         = coalesce(var.port, local.default_port)
 
   default_engine_versions = {
-    postgres = "15.4"
+    postgres = "15.12"
     mysql    = "8.0.35"
   }
   engine_version = var.engine_version != "" ? var.engine_version : local.default_engine_versions[var.engine]
@@ -41,7 +41,7 @@ locals {
     }
   }
 
-  engine_major_version = regex("^\\d+\\.?\\d*", local.engine_version)
+  engine_major_version = try(split(".", local.engine_version)[0], regex("^\\d+", local.engine_version))
 
   auto_parameter_family = var.use_aurora ? (
     lookup(local.aurora_parameter_group_families[var.engine], local.engine_major_version, "")
@@ -49,7 +49,7 @@ locals {
     lookup(local.parameter_group_families[var.engine], local.engine_major_version, "")
   )
 
-  parameter_group_family = var.parameter_group_family != "" ? var.parameter_group_family : local.auto_parameter_family
+  parameter_group_family = var.parameter_group_family != "" ? var.parameter_group_family : (local.auto_parameter_family != "" ? local.auto_parameter_family : (local.is_postgres ? "postgres15" : "mysql8.0"))
 
   base_postgres_params = {
     "max_connections"            = "200"

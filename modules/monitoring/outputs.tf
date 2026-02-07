@@ -21,5 +21,5 @@ output "grafana_admin_password" {
 
 output "port_forward_grafana_command" {
   description = "Command to port-forward Grafana"
-  value       = "kubectl port-forward svc/grafana 3000:80 -n monitoring"
+  value       = "kubectl port-forward svc/kube-prometheus-stack-grafana 3000:80 -n monitoring"
 }

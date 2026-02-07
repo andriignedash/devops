@@ -1,48 +1,37 @@
-aws_region = "us-west-2"
-project    = "final-project"
+aws_region  = "eu-central-1"
+aws_profile = "final"
+project     = "final-devops"
 
 vpc_cidr_block     = "10.0.0.0/16"
 public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
 private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+availability_zones = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]
+
+eks_cluster_name        = "final-eks"
+eks_cluster_version     = "1.29"
+eks_node_instance_types = ["t3.medium"]
+eks_node_desired_size   = 2
+eks_node_min_size       = 1
+eks_node_max_size       = 2
 
 ecr_repository_name = "django-app"
 
-eks_cluster_name         = "final-project-eks"
-eks_cluster_version      = "1.28"
-eks_node_instance_types  = ["t3.medium"]
-eks_node_desired_size    = 2
-eks_node_min_size        = 1
-eks_node_max_size        = 4
-
-jenkins_chart_version   = "4.6.1"
-argocd_chart_version    = "5.51.6"
+jenkins_chart_version    = "4.6.1"
+argocd_chart_version     = "5.51.6"
 monitoring_chart_version = "55.5.0"
 
 gitops_repo_url = "https://github.com/REPLACE_ME/REPLACE_ME.git"
 
-create_db = false
-
-use_aurora            = false
-aurora_instance_count = 1
-
+create_db         = true
+use_aurora        = false
 db_engine         = "postgres"
-db_engine_version = "15.4"
+db_engine_version = "15.12"
 db_instance_class = "db.t3.micro"
-db_name           = "appdb"
-db_username       = "dbadmin"
-db_password       = ""
-
-db_storage_gb     = 20
-db_max_storage_gb = 0
 db_multi_az       = false
+db_name           = "appdb"
+db_username       = "appuser"
 
-db_backup_retention_days = 7
-db_deletion_protection  = false
-db_skip_final_snapshot  = true
-db_apply_immediately    = false
-
-tags = {
-  Environment = "dev"
-  Owner       = "final-project"
-}
+db_backup_retention_days = 0
+db_deletion_protection   = false
+db_skip_final_snapshot   = true
+db_apply_immediately     = true

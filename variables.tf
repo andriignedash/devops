@@ -1,7 +1,13 @@
 variable "aws_region" {
   description = "AWS region to deploy resources"
   type        = string
-  default     = "us-west-2"
+  default     = "eu-central-1"
+}
+
+variable "aws_profile" {
+  description = "AWS CLI profile for provider and backend"
+  type        = string
+  default     = "final"
 }
 
 variable "project" {
@@ -37,7 +43,7 @@ variable "private_subnets" {
 variable "availability_zones" {
   description = "List of availability zones"
   type        = list(string)
-  default     = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  default     = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]
 }
 
 variable "ecr_repository_name" {

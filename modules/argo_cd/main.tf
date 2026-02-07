@@ -8,11 +8,14 @@ resource "kubernetes_namespace" "argocd" {
 }
 
 resource "helm_release" "argo_cd" {
-  name       = "argo-cd"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
-  version    = var.chart_version
-  namespace  = kubernetes_namespace.argocd.metadata[0].name
+  name             = "argo-cd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  version          = var.chart_version
+  namespace        = kubernetes_namespace.argocd.metadata[0].name
+  create_namespace = false
+  timeout          = 900
+  atomic           = true
 
   values = [
     file("${path.module}/values.yaml")

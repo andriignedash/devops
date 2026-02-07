@@ -77,7 +77,7 @@ module "jenkins" {
   chart_version    = var.jenkins_chart_version
   namespace_labels = local.common_tags
 
-  depends_on = [module.eks]
+  depends_on = [module.eks, null_resource.eks_ready]
 }
 
 module "argo_cd" {
@@ -87,7 +87,7 @@ module "argo_cd" {
   gitops_repo_url  = var.gitops_repo_url
   namespace_labels = local.common_tags
 
-  depends_on = [module.eks]
+  depends_on = [module.eks, null_resource.eks_ready]
 }
 
 module "monitoring" {
@@ -96,5 +96,5 @@ module "monitoring" {
   chart_version    = var.monitoring_chart_version
   namespace_labels = local.common_tags
 
-  depends_on = [module.eks]
+  depends_on = [module.eks, null_resource.eks_ready]
 }

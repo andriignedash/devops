@@ -1,7 +1,10 @@
 .terraform/
+.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfvars
+!terraform.tfvars.example
+!bootstrap-backend/terraform.tfvars.example
 
 *.pem
 *.key
@@ -13,3 +16,5 @@ __pycache__/
 *.pyc
 *.pyo
 *.log
+
+*.bak

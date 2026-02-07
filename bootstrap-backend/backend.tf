@@ -1,9 +1,7 @@
 terraform {
-  required_version = ">= 1.5.0"
-
   backend "s3" {
     bucket         = "andrii-final-tfstate-324352301711"
-    key            = "final-project/terraform.tfstate"
+    key            = "bootstrap/terraform.tfstate"
     region         = "eu-central-1"
     dynamodb_table = "terraform-locks-final-324352301711"
     encrypt        = true

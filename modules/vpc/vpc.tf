@@ -41,7 +41,6 @@ resource "aws_subnet" "private" {
   })
 }
 
-# NAT Gateway (one NAT to reduce cost)
 resource "aws_eip" "nat" {
   domain = "vpc"
 

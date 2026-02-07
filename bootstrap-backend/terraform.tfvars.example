@@ -1,3 +1,3 @@
 bucket_name         = "mycompany-final-project-tfstate"
 dynamodb_table_name = "mycompany-final-project-tfstate-locks"
-region              = "us-west-2"
+region              = "eu-central-1"
